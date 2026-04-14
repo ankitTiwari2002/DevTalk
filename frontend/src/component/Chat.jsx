@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { FaSmile, FaPaperPlane, FaEllipsisV } from "react-icons/fa";
+import { FaSmile, FaEllipsisV } from "react-icons/fa";
+import { IoSend } from "react-icons/io5";
 import { useParams } from "react-router-dom";
 import { createSocketConnection } from "../utils/socket";
 import { useSelector } from "react-redux";
@@ -153,7 +154,7 @@ const Chat = () => {
           disabled={!messages.trim()}
           className="btn btn-circle btn-primary btn-sm flex items-center justify-center text-white"
         >
-          <FaPaperPlane size={14} className="ml-[-2px]" />
+          <IoSend size={16} className="ml-1" />
         </button>
       </div>
     </div>
