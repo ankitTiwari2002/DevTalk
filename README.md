@@ -72,5 +72,3 @@ DevTalk is a full-stack social networking application specifically designed for 
 2. Install dependencies: `npm install`
 3. Start the Vite development server: `npm run dev`
 
----
-Built with ❤️ by Ankit Tiwari
