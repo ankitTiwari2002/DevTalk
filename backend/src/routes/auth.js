@@ -28,7 +28,11 @@ authRouter.post("/signup", async (req, res) => {
     const token = await savedUser.getJWT();
 
     //add the token to cookie and send the response back to user
-    res.cookie("token", token);
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
 
     res.json({ message: "User added successfully!", data: savedUser });
   } catch (err) {
@@ -51,7 +55,11 @@ authRouter.post("/login", async (req, res) => {
       const token = await user.getJWT();
 
       //add the token to cookie and send the response back to user
-      res.cookie("token", token);
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+      });
       res.send(user);
     } else {
       return res.status(401).send("Invalid credentials");
@@ -63,7 +71,12 @@ authRouter.post("/login", async (req, res) => {
 
 //logout API
 authRouter.post("/logout", async (req, res) => {
-  res.cookie("token", null, { expires: new Date(Date.now()) });
+  res.cookie("token", null, { 
+    expires: new Date(Date.now()),
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
   res.send("user logout successfully!");
 });
 
