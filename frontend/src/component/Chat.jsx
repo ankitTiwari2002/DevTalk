@@ -65,7 +65,9 @@ const Chat = () => {
   }, [userId, targetUserId]);
 
   const sendMessage = () => {
-    const socket = createSocketConnection();
+    if (!messages.trim()) return;
+    const socket = socketRef.current;
+    if (!socket) return;
     socket.emit("sendMessage", {
       firstName: user.firstName,
       lastName: user.lastName,
@@ -84,63 +86,74 @@ const Chat = () => {
   return (
     <div className="bg-gray-900 h-screen flex flex-col">
       {/* Header */}
-      <div className="bg-gray-800 p-4 flex items-center justify-between shadow-md">
-        <div>
-          <h1 className="text-xl font-bold text-blue-400">Chat</h1>
-          <p className="text-gray-400 text-sm">You are connected</p>
+      <div className="bg-gray-800/80 backdrop-blur-md p-4 flex items-center justify-between border-b border-gray-700 shadow-sm z-10 sticky top-0">
+        <div className="flex items-center gap-3">
+          <div className="avatar placeholder">
+            <div className="bg-neutral text-neutral-content rounded-full w-10">
+              <span className="text-xl">C</span>
+            </div>
+          </div>
+          <div>
+            <h1 className="text-lg font-semibold text-white">DevTalk Chat</h1>
+            <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Online
+            </p>
+          </div>
         </div>
-        <button className="text-gray-400 hover:text-gray-300">
-          <FaEllipsisV size={20} />
+        <button className="btn btn-ghost btn-circle text-gray-400 hover:text-white transition-colors">
+          <FaEllipsisV size={18} />
         </button>
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-900">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2 bg-gradient-to-b from-gray-900 to-gray-800">
+        {newMessages.length === 0 && (
+          <div className="flex items-center justify-center h-full text-gray-500 italic">
+            Say hi to start the conversation...
+          </div>
+        )}
         {newMessages.map((msg, index) => {
+          const isMe = user.firstName === msg.firstName;
           return (
             <div
               key={index}
-              className={`flex ${
-                user.firstName === msg.firstName
-                  ? "justify-end"
-                  : "justify-start"
-              }`}
+              className={`chat ${isMe ? "chat-end" : "chat-start"} animate-fade-in-up`}
             >
+              <div className="chat-header text-gray-400 text-xs mb-1">
+                {msg.firstName}
+              </div>
               <div
-                className={`${
-                  user.firstName === msg.firstName
-                    ? "bg-blue-600"
-                    : "bg-gray-800"
-                } text-white rounded-lg p-4 max-w-xs shadow-md`}
+                className={`chat-bubble shadow-sm ${
+                  isMe ? "chat-bubble-primary bg-blue-600 text-white" : "chat-bubble-neutral bg-gray-700 text-white"
+                }`}
               >
-                <p className="text-base">{msg.message}</p>
-                <span className="text-xs text-gray-300 block mt-2 text-right">
-                  {msg.firstName}
-                </span>
-                <div ref={chatEndRef} />
+                {msg.message}
               </div>
             </div>
           );
         })}
+        <div ref={chatEndRef} />
       </div>
 
       {/* Input Area */}
-      <div className="bg-gray-800 p-4 flex items-center gap-3">
-        <button className="text-gray-500 hover:text-gray-300">
-          <FaSmile size={24} />
+      <div className="bg-gray-800 p-3 sm:p-4 flex items-center gap-2 sm:gap-4 border-t border-gray-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+        <button className="btn btn-ghost btn-circle btn-sm text-gray-400 hover:text-white hover:bg-gray-700 transition">
+          <FaSmile size={20} />
         </button>
         <input
           type="text"
           value={messages}
           onChange={(e) => setMessages(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          placeholder="Type a formal message..."
+          className="flex-1 bg-gray-900/50 border border-gray-600 text-gray-200 px-4 py-2.5 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition-all placeholder-gray-500"
         />
         <button
           onClick={sendMessage}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition duration-200"
+          disabled={!messages.trim()}
+          className="btn btn-circle btn-primary btn-sm flex items-center justify-center text-white"
         >
-          <FaPaperPlane size={18} />
+          <FaPaperPlane size={14} className="ml-[-2px]" />
         </button>
       </div>
     </div>
