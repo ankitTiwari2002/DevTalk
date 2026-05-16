@@ -6,6 +6,8 @@ import { BASE_URL } from "../utils/constants";
 import { useDispatch, useSelector } from "react-redux";
 import { addUser } from "../utils/userSlice";
 import { useEffect } from "react";
+import { createSocketConnection } from "../utils/socket";
+import { addNotification } from "../utils/notificationSlice";
 
 const Body = () => {
   const dispatch = useDispatch();
@@ -31,6 +33,26 @@ const Body = () => {
   useEffect(() => {
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (!userData?._id) return;
+
+    const socket = createSocketConnection();
+    
+    // Announce to the server that we are online globally
+    socket.emit("userConnected", { userId: userData._id });
+
+    // Named handler to allow precise removal (no stacking on singleton)
+    const handleNewNotification = () => {
+      dispatch(addNotification());
+    };
+
+    socket.on("newNotification", handleNewNotification);
+
+    return () => {
+      socket.off("newNotification", handleNewNotification);
+    };
+  }, [userData?._id, dispatch]);
 
   return (
     <div>

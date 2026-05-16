@@ -3,16 +3,18 @@ import { FaSmile, FaEllipsisV } from "react-icons/fa";
 import { IoSend } from "react-icons/io5";
 import { useParams } from "react-router-dom";
 import { createSocketConnection } from "../utils/socket";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { BASE_URL } from "../utils/constants";
 import axios from "axios";
 
 const Chat = () => {
   const { targetUserId } = useParams();
   const user = useSelector((store) => store.user);
+  const dispatch = useDispatch();
   const userId = user?._id;
   const [messages, setMessages] = useState(""); // Input message
   const [newMessages, setNewMessages] = useState([]); // Message list
+  const [onlineUsers, setOnlineUsers] = useState([]); // Track who is online
   const socketRef = useRef(null); // To store the socket instance
   const chatEndRef = useRef(null); // For auto-scrolling to the bottom of the chat
 
@@ -44,24 +46,43 @@ const Chat = () => {
   useEffect(() => {
     if (!userId || !targetUserId) return;
 
-    // Initialize the socket connection only once
+    // Initialize the singleton socket connection
     const socket = createSocketConnection();
     socketRef.current = socket;
 
     // Join the chat room
     socket.emit("joinChat", { userId, targetUserId });
 
-    // Listen for incoming messages
-    socket.on("messageReceived", ({ firstName, message }) => {
-      // Add messages only if they are not sent by the current user
+    // ✅ Use NAMED handler functions so socket.off removes ONLY our specific
+    // listener and not all listeners on the singleton socket (avoids receiver bug)
+    const handleOnlineUsers = (users) => {
+      setOnlineUsers(users);
+    };
+
+    const handleMessageReceived = ({ firstName, message }) => {
+      // Only the RECEIVER gets this event (backend uses socket.to which excludes sender)
       setNewMessages((prevMessages) => [
         ...prevMessages,
         { firstName, message },
       ]);
-    });
+    };
+
+    const handleMessageSent = ({ firstName, message }) => {
+      // Only the SENDER gets this event (backend uses socket.emit directly to sender)
+      setNewMessages((prevMessages) => [
+        ...prevMessages,
+        { firstName, message },
+      ]);
+    };
+
+    socket.on("onlineUsers", handleOnlineUsers);
+    socket.on("messageReceived", handleMessageReceived);
+    socket.on("messageSent", handleMessageSent);
 
     return () => {
-      socket.disconnect(); // Disconnect the socket when the component unmounts
+      socket.off("onlineUsers", handleOnlineUsers);
+      socket.off("messageReceived", handleMessageReceived);
+      socket.off("messageSent", handleMessageSent);
     };
   }, [userId, targetUserId]);
 
@@ -69,6 +90,9 @@ const Chat = () => {
     if (!messages.trim()) return;
     const socket = socketRef.current;
     if (!socket) return;
+
+    // ✅ No optimistic update — server will emit 'messageSent' back to sender
+    // This guarantees exactly ONE message appears, with zero duplicates
     socket.emit("sendMessage", {
       firstName: user.firstName,
       lastName: user.lastName,
@@ -84,6 +108,8 @@ const Chat = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [newMessages]);
 
+  const isOnline = onlineUsers.includes(targetUserId);
+
   return (
     <div className="bg-gray-900 h-screen flex flex-col">
       {/* Header */}
@@ -96,8 +122,9 @@ const Chat = () => {
           </div>
           <div>
             <h1 className="text-lg font-semibold text-white">DevTalk Chat</h1>
-            <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Online
+            <p className={`text-xs font-medium flex items-center gap-1 ${isOnline ? "text-emerald-400" : "text-gray-400"}`}>
+              <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-gray-500"}`}></span> 
+              {isOnline ? "Online" : "Offline"}
             </p>
           </div>
         </div>

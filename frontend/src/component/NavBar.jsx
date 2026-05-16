@@ -3,9 +3,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { BASE_URL } from "../utils/constants";
 import { removeUser } from "../utils/userSlice";
+import { clearNotifications } from "../utils/notificationSlice";
 
 const NavBar = () => {
   const user = useSelector((store) => store.user);
+  const notifications = useSelector((store) => store.notifications);
   const photourl =
     user?.photourl ||
     "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp";
@@ -21,6 +23,13 @@ const NavBar = () => {
       console.log(err);
     }
   };
+
+  const handleClearNotifications = () => {
+    if (notifications?.hasNewMessage) {
+      dispatch(clearNotifications());
+    }
+  };
+
   return (
     <div className="navbar bg-slate-900 text-slate-100 shadow-lg sticky top-0 z-50 backdrop-blur-md bg-opacity-80 border-b border-slate-800">
       <div className="flex-1 px-4">
@@ -33,12 +42,17 @@ const NavBar = () => {
       </div>
       <div className="flex-none gap-2">
         {user && (
-          <div className="dropdown dropdown-end">
+          <div className="dropdown dropdown-end" onClick={handleClearNotifications}>
             <div
               tabIndex={0}
               role="button"
-              className="btn btn-ghost btn-circle avatar"
+              className="btn btn-ghost btn-circle avatar indicator"
             >
+              {notifications?.hasNewMessage && (
+                <span className="indicator-item badge badge-secondary badge-sm shadow-md animate-pulse">
+                  {notifications.unreadCount}
+                </span>
+              )}
               <div className="w-10 rounded-full">
                 <img alt="Tailwind CSS Navbar component" src={photourl} />
               </div>
